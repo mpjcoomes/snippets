@@ -169,7 +169,7 @@ Denominator () comes from P(T): How?
 	P(DnT) = P(T|D)P(D) = Sensitivity*Prevalence
 	P(T) = P(T|D)P(D) + P(T|~D)P(~D)
 
-###Example
+### Example
 ```r
 Sens <- .84        #hits
 Spec <- .77        #1-false hits, 1-P(T|~D)
