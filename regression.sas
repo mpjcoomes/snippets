@@ -317,3 +317,149 @@ ods graphics off;
 
 
 ods rtf close;
+
+
+*Weighted and Non-Linear Regression;
+
+*Weighting for non-constant sample sizes;
+proc import out=wages
+	file="E:\SASdata\wages.sav"
+	dbms=spss replace;
+run;
+proc reg data=wages all;
+	model AvWage = edgroup;
+run; quit;
+proc reg data=wages all;
+	weight N;
+	model AvWage = edgroup;
+run; quit;
+
+ods graphics on / noborder;
+proc sgplot data=wages;
+	reg x=edgroup y=WtYhat / legendlabel='Weighted';
+	reg x=edgroup y=Yhat / legendlabel="Not W'd";
+	pbspline x=edgroup y=AvWage / legendlabel='Raw Average';
+run;
+ods graphics off;
+
+
+proc import out=wls_eg
+    file="E:\SASdata\sampleweightedregressionexample.txt"
+    dbms=dlm replace;
+    delimiter=' ';
+run;
+ods graphics on / noborder height=9cm;
+proc reg data=wls_eg
+	plots(only)=(predictions(x=x) rstudentbypredicted);
+	model y = x;
+run; quit;
+data wls_eg;
+	set wls_eg;
+	weights = 1/(x**2);
+run;
+proc reg data=wls_eg
+	plots(only)=(predictions(x=x) rstudentbypredicted);
+	weight weights;
+	model y = x;
+run; quit;
+ods graphics off;
+
+
+*Non-Constant Variance & Sample Size;
+proc import out=waghouse_prices
+	file="E:\SASdata\house_prices.sav"
+	dbms=spss replace;
+run;
+ods graphics on / noborder height=9cm;
+proc reg data=waghouse_prices
+	plots(only)=(predictions(x=bedrooms) rstudentbypredicted);
+	model pricemean= month bedrooms / stb;
+	output out=unweighted p=UW_p;
+run; quit;
+proc reg data=waghouse_prices
+	plots(only)=(predictions(x=bedrooms) rstudentbypredicted);
+	weight weight;
+	model pricemean= month bedrooms / stb;
+	output out=weighted p=W_p;
+run; quit;
+proc sort data=unweighted;
+	by weight;
+run;
+proc sort data=weighted;
+	by weight;
+run;
+data compare;
+	merge unweighted weighted;
+	by weight;
+run;
+ods graphics off;
+
+
+/*********** Non-Linear Models **********/
+
+*Airline Multiplicative Example;
+proc import out=airlinepass
+    file="E:\SASdata\airlinepass.txt"
+    dbms=dlm replace;
+    delimiter=' ';
+run;
+ods graphics on / height=10cm noborder;
+    proc reg data=airlinepass 
+		plots(only)=(rstudentbypredicted);
+    model pass = miles inm ins popm pops airl/ stb pcorr2;
+run; quit;
+ods graphics off;
+
+data airlinepass;
+	set airlinepass;
+	ln_pass = log(pass);
+	ln_miles = log(miles);
+	ln_inm = log(inm);
+	ln_ins = log(ins);
+	ln_popm = log(popm);
+	ln_pops = log(pops);
+	ln_airl = log(airl);
+run;
+ods graphics on / height=10cm noborder;
+proc reg data=airlinepass 
+		plots(only)=(rstudentbypredicted);
+    model ln_pass = ln_miles ln_inm ln_ins ln_popm ln_pops ln_airl
+		/ stb pcorr2;
+run; quit;
+ods graphics off;
+
+
+*Radiation Decay: Exponential model;
+proc import out=radiationdecay
+    file="E:\SASdata\radiationdecay.txt"
+    dbms=dlm replace;
+    delimiter=' ';
+run;
+ods graphics on / height=10cm noborder;
+proc nlin data=radiationdecay save maxiter=1000;
+*outest=knot(where=(_TYPE_='FINAL' & _STATUS_='0 Converged'));
+	parameters b0=540 b1=-0.0378;
+	model count = b0 * exp(b1*time); 
+	output out=bootnlin u95=u95 l95=l95 u95m=u95m l95m=l95m
+			p=p student=student sse=_SSE_;
+run;
+proc sgplot data=bootnlin;
+	band x=time upper=u95 lower=l95 / nofill outline
+		lineattrs=(pattern=2) legendlabel="95% CI of prediction";
+	band x=time upper=u95m lower=l95m / transparency=.2
+		legendlabel="95% CI of mean";
+	scatter x=time y=count;
+	PBSPLINE x=time y=p / nomarkers legendlabel=" ";
+run;
+proc sgplot data=bootnlin;
+	scatter x=p y=student;
+	refline 2 -2 / lineattrs=(pattern=2);
+	xaxis label='Predicted Value';
+	yaxis label='RStudent';
+run;
+data fitstats;
+	set bootnlin(obs=1);
+	AIC = 229*log(_SSE_/229)+2*2;
+	SBC = 229*log(_SSE_/229)+2*log(229);
+run;proc print; var AIC SBC; run;
+ods graphics off;
