@@ -9,3 +9,4 @@ General snippets of code and writing.
 -   [Intervention Analysis on Electrical Time Series](PowerTimeSeries.r)
 -   [A very simple RF classifier model](BasicClassifier.r)
 -   [Cluster Analysis](ClusterAnalysis.r)
+-   [Logitech mouse double click fix](catch_double_click.lua)
