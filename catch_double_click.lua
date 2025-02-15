@@ -1,5 +1,5 @@
 -- Back button is double-clicking.
--- Unbind it in Assignments, create Back macro that calls Back mouse cmd
+-- Unbind it in Assignments by selecting the key and clicking DISABLE
 -- Logitech G HUB > MANAGE PROFILES > Scripting
 
 lastInstance = 0
